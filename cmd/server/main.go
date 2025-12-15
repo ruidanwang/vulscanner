@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ruidanwang/vulscanner/vulscanner/pkg/router"
+	"github.com/ruidanwang/vulscanner/pkg/router"
 )
 
 func main() {

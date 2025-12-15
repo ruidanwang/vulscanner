@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ruidanwang/vulscanner/vulscanner/pkg/handler"
+	"github.com/ruidanwang/vulscanner/pkg/handler"
 )
 
 func Register(r *gin.Engine) {
