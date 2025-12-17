@@ -2,11 +2,15 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ruidanwang/vulscanner/pkg/handler"
+	handler "github.com/ruidanwang/vulscanner/pkg/handler/health"
+	portscan "github.com/ruidanwang/vulscanner/pkg/handler/portscan"
 )
 
 func Register(r *gin.Engine) {
 	api := r.Group("/api")
 
 	api.GET("/health", handler.Health)
+
+	// 注册端口扫描路由
+	api.POST("/scan/portscan", portscan.RunNaabuScan)
 }
