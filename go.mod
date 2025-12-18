@@ -10,7 +10,6 @@ require (
 require (
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
 	github.com/charmbracelet/glamour v0.8.0 // indirect
-	github.com/projectdiscovery/utils v0.7.2 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 )
 
@@ -110,6 +109,7 @@ require (
 	github.com/projectdiscovery/retryabledns v1.0.110 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.1.0 // indirect
 	github.com/projectdiscovery/uncover v1.2.0 // indirect
+	github.com/projectdiscovery/utils v0.7.1 // indirect
 	github.com/quic-go/quic-go v0.57.1 // indirect
 	github.com/refraction-networking/utls v1.8.1 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0 // indirect
