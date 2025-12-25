@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/projectdiscovery/gologger"
-	// "github.com/projectdiscovery/gologger/levels"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/naabu/v2/pkg/result"
 	"github.com/projectdiscovery/naabu/v2/pkg/runner"
 )
@@ -15,8 +15,11 @@ import (
 // ScanRequest 定义了端口扫描API的请求体结构
 type ScanRequest struct {
 	Hosts []string `json:"hosts" binding:"required"` // 要扫描的主机列表
-	Ports string   `json:"ports" binding:"required"` // 要扫描的端口
+	Ports string   `json:"ports" `                   // 要扫描的端口
+	Others string  `json:"others"`
 }
+
+// code update
 
 // RunNaabuScan 作为Gin的Handler，使用Naabu SDK执行主机和端口发现扫描。
 func RunNaabuScan(c *gin.Context) {
@@ -28,7 +31,7 @@ func RunNaabuScan(c *gin.Context) {
 	}
 
 	// Naabu 使用 gologger，我们可以配置它以控制日志输出。
-	// gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 
 	// 用于线程安全地收集扫描结果
 	var results []*result.HostResult
@@ -52,17 +55,17 @@ func RunNaabuScan(c *gin.Context) {
 			mu.Unlock()
 
 			// 仍然可以在服务器端打印日志
-			// gologger.Info().Msgf("发现主机: %s (%s)", hr.Host, hr.IP)
-			// for _, port := range hr.Ports {
-			// 	gologger.Info().Msgf("  -> 开放端口: %d/%s", port.Port, port.Protocol)
-			// }
+			gologger.Info().Msgf("发现主机: %s (%s)", hr.Host, hr.IP)
+			for _, port := range hr.Ports {
+				gologger.Info().Msgf("  -> 开放端口: %d/%s", port.Port, port.Protocol)
+			}
 		},
 	}
 
 	// 创建一个新的 Naabu runner
 	naabuRunner, err := runner.NewRunner(&options)
 	if err != nil {
-		// gologger.Error().Msgf("无法创建 Naabu runner: %s", err)
+		gologger.Error().Msgf("无法创建 Naabu runner: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法创建扫描器"})
 		return
 	}
@@ -71,11 +74,11 @@ func RunNaabuScan(c *gin.Context) {
 	// 开始枚举（扫描）
 	// gologger.Info().Msgf("开始对目标 %v 扫描端口 %s", options.Host, options.Ports)
 	if err := naabuRunner.RunEnumeration(context.Background()); err != nil {
-		// gologger.Error().Msgf("无法运行枚举: %s", err)
+		gologger.Error().Msgf("无法运行枚举: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "扫描执行失败"})
 		return
 	}
-	// gologger.Info().Msg("扫描完成。")
+	gologger.Info().Msg("扫描完成。")
 
 	// 以JSON格式返回收集到的所有结果
 	c.JSON(http.StatusOK, gin.H{
