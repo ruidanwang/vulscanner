@@ -6,13 +6,8 @@ import (
 	"net/http"
 	"sync"
 
-	"fmt"
-
-	"net/netip"
-
 	"github.com/gin-gonic/gin"
-	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
-	"github.com/praetorian-inc/fingerprintx/pkg/scan"
+
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
