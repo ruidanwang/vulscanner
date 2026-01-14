@@ -174,7 +174,7 @@ require (
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
-	github.com/praetorian-inc/fingerprintx v1.1.15 // indirect
+	github.com/praetorian-inc/fingerprintx v1.1.19 // indirect
 	github.com/projectdiscovery/dsl v0.8.8 // indirect
 	github.com/projectdiscovery/fasttemplate v0.0.2 // indirect
 	github.com/projectdiscovery/gcache v0.0.0-20241015120333-12546c6e3f4c // indirect

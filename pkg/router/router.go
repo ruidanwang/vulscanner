@@ -14,6 +14,7 @@ func Register(r *gin.Engine) {
 
 	// 注册端口扫描路由
 	api.POST("/scan/portscan", portscan.RunNaabuScan)
+	api.GET(("/scan/withNmap"),portscan.ScanWithNMAP)
 
 	api.POST("/scan/vulscan", vulscan.VulScan)
 }
