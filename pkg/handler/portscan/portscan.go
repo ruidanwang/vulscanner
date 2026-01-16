@@ -2,6 +2,7 @@ package portscan
 
 import (
 	"context"
+	"encoding/xml"
 	"log"
 	"net/http"
 	"sync"
@@ -16,11 +17,127 @@ import (
 )
 
 // ScanRequest 定义了端口扫描API的请求体结构
+// type ScanRequest struct {
+// 	Hosts  []string `json:"hosts" binding:"required"` // 要扫描的主机列表
+// 	Ports  string   `json:"ports" `                   // 要扫描的端口
+// 	Others string   `json:"others"`
+// }
+
+// ScanRequest 扫描请求
 type ScanRequest struct {
-	Hosts  []string `json:"hosts" binding:"required"` // 要扫描的主机列表
-	Ports  string   `json:"ports" `                   // 要扫描的端口
-	Others string   `json:"others"`
+	Hosts       []string `json:"hosts" binding:"required"` // 目标主机
+	Ports       string   `json:"ports"`                    // 端口范围，默认常见端口
+	ScanType    string   `json:"scan_type"`                // "syn" 或 "connect"
+	Rate        int      `json:"rate"`                     // 扫描速率
+	Timeout     int      `json:"timeout"`                  // 超时时间(ms)
+	EnableNmap  bool     `json:"enable_nmap"`              // 是否启用 Nmap
+	NmapOptions []string `json:"nmap_options"`             // Nmap 额外选项
+	Verify      bool     `json:"verify"`                   // 是否验证端口
 }
+
+// ScanResponse 扫描响应
+type ScanResponse struct {
+	Code    int         `json:"code"`            // 状态码
+	Message string      `json:"message"`         // 消息
+	Data    *ScanResult `json:"data,omitempty"`  // 扫描结果
+	Error   string      `json:"error,omitempty"` // 错误信息
+}
+
+// ScanResult 扫描结果
+type ScanResult struct {
+	ScanID     string        `json:"scan_id"`     // 扫描任务ID
+	Target     string        `json:"target"`      // 目标
+	StartTime  string        `json:"start_time"`  // 开始时间
+	EndTime    string        `json:"end_time"`    // 结束时间
+	Duration   string        `json:"duration"`    // 扫描耗时
+	Status     string        `json:"status"`      // 状态: scanning, completed, failed
+	TotalPorts int           `json:"total_ports"` // 扫描的端口总数
+	OpenPorts  int           `json:"open_ports"`  // 开放端口数
+	PortList   []PortInfo    `json:"port_list"`   // 端口列表
+	Services   []ServiceInfo `json:"services"`    // 服务信息（Nmap结果）
+}
+
+// PortInfo 端口信息（Naabu结果）
+type PortInfo struct {
+	IP       string `json:"ip"`       // IP地址
+	Port     int    `json:"port"`     // 端口号
+	Protocol string `json:"protocol"` // 协议
+	State    string `json:"state"`    // 状态
+	IsCDN    bool   `json:"is_cdn"`   // 是否为CDN
+	CDNName  string `json:"cdn_name"` // CDN名称
+}
+
+// ServiceInfo 服务信息（Nmap结果）
+type ServiceInfo struct {
+	IP        string         `json:"ip"`                   // IP地址
+	Port      int            `json:"port"`                 // 端口号
+	Protocol  string         `json:"protocol"`             // 协议
+	State     string         `json:"state"`                // 状态
+	Service   string         `json:"service"`              // 服务名称
+	Product   string         `json:"product,omitempty"`    // 产品名称
+	Version   string         `json:"version,omitempty"`    // 版本
+	ExtraInfo string         `json:"extra_info,omitempty"` // 额外信息
+	OSType    string         `json:"os_type,omitempty"`    // 操作系统类型
+	Scripts   []ScriptResult `json:"scripts,omitempty"`    // 脚本扫描结果
+}
+
+// ScriptResult Nmap脚本结果
+type ScriptResult struct {
+	ID     string `json:"id"`     // 脚本ID
+	Output string `json:"output"` // 输出内容
+}
+
+// ============= Nmap XML 解析结构 =============
+
+type NmapRun struct {
+	XMLName xml.Name   `xml:"nmaprun"`
+	Hosts   []NmapHost `xml:"host"`
+}
+
+type NmapHost struct {
+	Address NmapAddress `xml:"address"`
+	Ports   NmapPorts   `xml:"ports"`
+}
+
+type NmapAddress struct {
+	Addr string `xml:"addr,attr"`
+}
+
+type NmapPorts struct {
+	Ports []NmapPort `xml:"port"`
+}
+
+type NmapPort struct {
+	Protocol string       `xml:"protocol,attr"`
+	PortID   int          `xml:"portid,attr"`
+	State    NmapState    `xml:"state"`
+	Service  NmapService  `xml:"service"`
+	Scripts  []NmapScript `xml:"script"`
+}
+
+type NmapState struct {
+	State string `xml:"state,attr"`
+}
+
+type NmapService struct {
+	Name      string `xml:"name,attr"`
+	Product   string `xml:"product,attr"`
+	Version   string `xml:"version,attr"`
+	ExtraInfo string `xml:"extrainfo,attr"`
+	OSType    string `xml:"ostype,attr"`
+}
+
+type NmapScript struct {
+	ID     string `xml:"id,attr"`
+	Output string `xml:"output,attr"`
+}
+
+// ============= 全局变量 =============
+
+var (
+	scanResults = make(map[string]*ScanResult)
+	resultMutex sync.RWMutex
+)
 
 type ScanResultFP struct {
 	Host     string
@@ -31,146 +148,6 @@ type ScanResultFP struct {
 }
 
 // code update
-
-// func ScanWithfingerprintx(c *gin.Context) {
-// 	target := "scanme.sh"
-// 	ports := "21-23,80,443,3306,5432,6379,8080"
-
-// 	// 步骤 1: 使用 naabu 进行快速端口扫描
-// 	openPorts := performPortScan(target, ports)
-
-// 	// 步骤 2: 使用 fingerprintx 对开放端口进行指纹识别
-// 	fingerprints := performFingerprinting(target, openPorts)
-
-// 	// 输出结果
-// 	printResults(fingerprints)
-// }
-
-// // performPortScan 使用 naabu 执行端口扫描
-// func performPortScan(target, ports string) []int {
-// 	var openPorts []int
-// 	var mu sync.Mutex
-
-// 	options := runner.Options{
-// 		Host:     goflags.StringSlice{target},
-// 		ScanType: "c", // CONNECT scan (无需 root)
-// 		Ports:    ports,
-// 		Rate:     1000,
-// 		Retries:  2,
-// 		Timeout:  1000,
-// 		Silent:   true,
-// 		OnResult: func(hr *result.HostResult) {
-// 			mu.Lock()
-// 			defer mu.Unlock()
-// 			for _, port := range hr.Ports {
-// 				openPorts = append(openPorts, port.Port)
-// 				log.Printf("[Naabu] 发现开放端口: %s:%d\n", hr.Host, port.Port)
-// 			}
-// 		},
-// 	}
-
-// 	naabuRunner, err := runner.NewRunner(&options)
-// 	if err != nil {
-// 		log.Fatal("初始化 naabu 失败:", err)
-// 	}
-// 	defer naabuRunner.Close()
-
-// 	log.Printf("[*] 开始对 %s 进行端口扫描...\n", target)
-// 	err = naabuRunner.RunEnumeration(context.Background())
-// 	if err != nil {
-// 		log.Fatal("端口扫描失败:", err)
-// 	}
-
-// 	return openPorts
-// }
-
-// // performFingerprinting 使用 fingerprintx 进行服务指纹识别
-// func performFingerprinting(target string, ports []int) []ScanResultFP {
-// 	var results []ScanResultFP
-
-// 	// 创建 fingerprintx 扫描配置
-// 	config := scan.Config{
-// 		DefaultTimeout: 5000,  // 5秒超时
-// 		FastMode:       false, // 完整扫描模式
-// 		UDP:            false, // 只扫描 TCP
-// 		Verbose:        true,
-// 	}
-
-// 	log.Printf("[*] 开始对 %d 个端口进行指纹识别...\n", len(ports))
-
-// 	for _, port := range ports {
-// 		// 构建目标地址
-// 		addr, err := netip.ParseAddrPort(fmt.Sprintf("%s:%d", target, port))
-// 		if err != nil {
-// 			log.Printf("[!] 解析地址失败 %s:%d - %v\n", target, port, err)
-// 			continue
-// 		}
-
-// 		// 执行指纹识别
-// 		fpResult, err := scan.ScanTarget(addr, config, plugins.DEFAULT_PLUGINS)
-// 		if err != nil {
-// 			log.Printf("[!] 指纹识别失败 %s:%d - %v\n", target, port, err)
-// 			continue
-// 		}
-
-// 		// 保存结果
-// 		scanResult := ScanResultFP{
-// 			Host:     target,
-// 			Port:     port,
-// 			Service:  fpResult.Protocol,
-// 			Version:  getVersion(fpResult),
-// 			Metadata: fpResult.Metadata,
-// 		}
-
-// 		results = append(results, scanResult)
-// 		log.Printf("[FingerprintX] %s:%d -> %s %s\n",
-// 			target, port, fpResult.Protocol, getVersion(fpResult))
-// 	}
-
-// 	return results
-// }
-
-// // getVersion 从 fingerprintx 结果中提取版本信息
-// func getVersion(fpResult *plugins.ServiceFingerprint) string {
-// 	if fpResult.Metadata == nil {
-// 		return ""
-// 	}
-
-// 	// 根据不同服务类型提取版本信息
-// 	switch m := fpResult.Metadata.(type) {
-// 	case plugins.HTTPMetadata:
-// 		return m.Version
-// 	case plugins.SSHMetadata:
-// 		return m.ServerID.Software
-// 	case plugins.MySQLMetadata:
-// 		return m.Version
-// 	case plugins.PostgresMetadata:
-// 		return m.Version
-// 	// 可以添加更多服务类型
-// 	default:
-// 		return fmt.Sprintf("%v", m)
-// 	}
-// }
-
-// // printResults 打印扫描和指纹识别结果
-// func printResults(results []ScanResultFP) {
-// 	fmt.Println("\n" + "="*60)
-// 	fmt.Println("完整扫描结果")
-// 	fmt.Println("=" * 60)
-
-// 	for _, r := range results {
-// 		fmt.Printf("\n主机: %s\n", r.Host)
-// 		fmt.Printf("端口: %d\n", r.Port)
-// 		fmt.Printf("服务: %s\n", r.Service)
-// 		if r.Version != "" {
-// 			fmt.Printf("版本: %s\n", r.Version)
-// 		}
-// 		if r.Metadata != nil {
-// 			fmt.Printf("元数据: %+v\n", r.Metadata)
-// 		}
-// 		fmt.Println("-" * 60)
-// 	}
-// }
 
 func ScanWithNMAP(c *gin.Context) {
 	// 示例1: 使用 naabu 进行端口扫描，然后调用 nmap 进行服务检测
