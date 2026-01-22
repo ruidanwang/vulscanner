@@ -1,0 +1,16 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+bin = "tmp/app"
+cmd = "go build -o ./tmp/app ./cmd/server && dlv dap --listen=127.0.0.1:38697"
+delay = 1000
+include_ext = ["go"]
+exclude_dir = ["tmp", "vendor", ".git"]
+stop_on_error = true
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true

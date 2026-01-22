@@ -1,0 +1,24 @@
+# ===== Go =====
+*.exe
+*.out
+*.test
+*.prof
+
+# ===== air =====
+tmp/
+# .air.toml
+
+# ===== IDE =====
+.vscode/
+.idea/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== log =====
+*.log
+
+# ===== env =====
+.env
+.env.*
