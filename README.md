@@ -9,3 +9,8 @@
 
 ### 安装go tools
 ctrl + shift + p -> Go:Update/Install tools 选中go所有tools安装/更新
+
+
+### swagger
+
+swag init -d ./cmd/server -g ./cmd/server
