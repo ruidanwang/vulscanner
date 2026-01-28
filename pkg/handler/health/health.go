@@ -13,7 +13,7 @@ import (
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 200 {string} Helloworld
+// @Success 200 {string} ok
 // @Router /health [get]
 func Health(c *gin.Context) {
 	c.JSON(200, gin.H{
